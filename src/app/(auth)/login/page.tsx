@@ -51,6 +51,7 @@ export default function LoginPage() {
 
       {/* LOGO REAL (optimizado con next/image) */}
       <div className="mx-auto mb-6 flex justify-center">
+        <a href="https://finkus.app/"></a>
         <Image
           src="/assets/logo_finkus.png"  // <- desde /public
           alt="Logo Finkus"
@@ -81,8 +82,31 @@ export default function LoginPage() {
           </AnimatePresence>
         </div>
 
-        {/* BLOQUE RESERVADO PARA EL FORMULARIO (inputs y botón irán aquí) */}
-        <div className="mt-6 h-24 rounded-xl border border-white/15 bg-white/5" />
+        {/* FORMULARIO */}
+        <form className="mt-6 space-y-4">
+          <div>
+            <input
+              type="email"
+              placeholder="Correo electrónico"
+              className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/40"
+            />
+          </div>
+          <div>
+            <input
+              type="password"
+              placeholder="Contraseña"
+              className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/40"
+            />
+          </div>
+
+          {/* BOTÓN PRINCIPAL */}
+          <button
+            type="submit"
+            className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 py-3 font-medium text-white shadow-md hover:opacity-90 transition"
+          >
+            Iniciar sesión
+          </button>
+        </form>
 
         {/* ENLACE SECUNDARIO (crear cuenta) */}
         <div className="mt-4 text-center text-sm text-white/70">
@@ -92,6 +116,14 @@ export default function LoginPage() {
             className="underline underline-offset-4">Crear cuenta
           </a>
         </div>
+
+        {/* ENLACE terciario (olvidaste contraseña) */}
+        <div className="mt-2 text-center text-xs text-white/60">
+          <a href="/forgot-password" className="hover:underline">
+            ¿Olvidaste tu contraseña?
+          </a>
+        </div>
+
       </div>
     </div>
   );
