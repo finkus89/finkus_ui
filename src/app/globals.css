@@ -36,3 +36,21 @@ body {
   background-attachment: fixed, fixed;
   min-height: 100vh;
 }
+
+.finkus-btn {
+  background: linear-gradient(90deg, #149183 0%, #6767C2 50%, #AA6DC7 100%);
+  color: #fff;
+  font-weight: 500;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.finkus-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.finkus-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(103, 103, 194, 0.4);
+}

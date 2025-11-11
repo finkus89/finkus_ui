@@ -87,7 +87,10 @@ export default function LoginPage() {
         {/* ENLACE SECUNDARIO (crear cuenta) */}
         <div className="mt-4 text-center text-sm text-white/70">
           ¿Nuevo en Finkus?{" "}
-          <span className="underline underline-offset-4">Crear cuenta</span>
+          <a 
+            href="/register" 
+            className="underline underline-offset-4">Crear cuenta
+          </a>
         </div>
       </div>
     </div>
