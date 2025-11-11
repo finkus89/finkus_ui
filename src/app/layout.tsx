@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Sulphur_Point } from "next/font/google";   //importa Tipo de fuente pra la webapp
 
+
 // Configura la familia y pesos que vas a usar en toda la app
 const sulphur = Sulphur_Point({
   subsets: ["latin"],
@@ -12,9 +13,12 @@ const sulphur = Sulphur_Point({
 
 
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "Finkus",
-  description: "Mentoría diaria inteligente",
+  description: "Guía diaria con IA",
+  icons: {
+    icon: "/assets/favicon.png",   // 👈 tu favicon
+  },
 };
 
 /**     se escgoge el tipo de letra global para la webapp   */
