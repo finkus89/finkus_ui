@@ -13,11 +13,10 @@ const sulphur = Sulphur_Point({
 
 
 
-export const metadata = {
-  title: "Finkus",
-  description: "Guía diaria con IA",
+export const metadata: Metadata = {
+  title: "Finkus | Guía diaria con IA",
   icons: {
-    icon: "/assets/favicon.png",   // 👈 tu favicon
+    icon: "/assets/favicon.ico",   // 👈 tu favicon
   },
 };
 
