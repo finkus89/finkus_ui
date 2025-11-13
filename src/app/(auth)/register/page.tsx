@@ -4,6 +4,7 @@
 
 import { useState} from "react"; // 👈 Para manejar el estado del formulario.
 import Image from "next/image";
+import Link from "next/link";
 
 
 // 🔹 Página de registro (mitad izquierda branding / mitad derecha formulario)
@@ -25,7 +26,8 @@ export default function RegisterPage() {
       <section className="relative hidden md:flex finkus-bg text-white md:sticky md:top-0 md:h-screen items-center">
              {/* Barra superior: logo + enlace "Iniciar sesión" */}
          <div className="absolute inset-x-0 top-0 flex items-center justify-between p-6">
-             {/* <div className="mx-auto max-w-md p-10">*/}
+             
+          <Link href="https://finkus.app/" target="_blank">  
           <Image
             src={"/assets/logo_finkus.png"}
             alt="Logo Finkus"
@@ -33,7 +35,7 @@ export default function RegisterPage() {
             height={32}
             className="object-contain"
             />
-          
+          </Link>
           <a 
             href="/login" 
             className="text-sm hover:underline opacity-80 hover:opacity-100"

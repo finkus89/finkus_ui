@@ -4,6 +4,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 
 // Frases que rotan (puedes agregar o cambiar libremente)
@@ -51,7 +52,7 @@ export default function LoginPage() {
 
       {/* LOGO REAL (optimizado con next/image) */}
       <div className="mx-auto mb-6 flex justify-center">
-        <a href="https://finkus.app/"></a>
+        <Link href="https://finkus.app/" target="_blank">
         <Image
           src="/assets/logo_finkus.png"  // <- desde /public
           alt="Logo Finkus"
@@ -60,10 +61,11 @@ export default function LoginPage() {
           className="opacity-90"
           priority                               // carga prioritaria
         />
+        </Link>
       </div>
 
         {/* TÍTULO PRINCIPAL */}
-        <h1 className="text-center text-4xl font-ligth 300 text-white leading-relaxed">FinKus</h1>
+        <h1 className="text-center text-5xl font-ligth 300 text-white leading-relaxed">FinKus</h1>
 
         {/* MENSAJE DEL MENTOR CON ANIMACION */}
         
