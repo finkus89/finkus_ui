@@ -369,14 +369,7 @@ function SidebarContent({
           active
           icon={<LayoutDashboard size={18} />}
         />
-        <SidebarItem
-          label="Mentoría"
-          icon={<Sparkles size={18} />}
-        />
-        <SidebarItem
-          label="Mensajes"
-          icon={<MessageCircle size={18} />}
-        />
+      
         <SidebarItem
           label="Plantillas / Extras"
           icon={<Wand2 size={18} />}

@@ -122,10 +122,10 @@ body {
 
 /* Badges (chips) con color de marca */
 .finkus-badge {
-  background: rgba(20, 145, 131, 0.13);
-  color: #b6ffe9;
+  background: rgba(87, 98, 103, 0.57);
+  color: #27e224c1;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 9 px;
   font-weight: 500;
   padding: 3px 10px;
   display: inline-flex;

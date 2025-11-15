@@ -2,20 +2,40 @@
 
 "use client"; // 👈 Indica que este componente se ejecuta en el cliente (usa hooks).
 
-import { useState} from "react"; // 👈 Para manejar el estado del formulario.
+import { useState } from "react"; // 👈 Para manejar el estado del formulario.
 import Image from "next/image";
 import Link from "next/link";
+// ⬇️ Nuevo: router para redirección después del registro
+import { useRouter } from "next/navigation";
+// ⬇️ Nuevo: cliente de Supabase para el navegador
+import { createClient } from "@/lib/supabase/browser";
 
 
 // 🔹 Página de registro (mitad izquierda branding / mitad derecha formulario)
 export default function RegisterPage() {
-     // Password
+    // Password
     const [password, setPassword] = useState("");
     const [password2, setPassword2] = useState("");
+
+    // ⬇️ Nuevo: estado para nombre completo
+    const [fullName, setFullName] = useState("");
+
+    // ⬇️ Nuevo: estado para correo
+    const [email, setEmail] = useState("");
+
+    // ⬇️ Nuevo: estado para mostrar errores al usuario
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    // ⬇️ Nuevo: estado de envío (loading) para desactivar botón mientras se procesa
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // ⬇️ Nuevo: instancia del router para navegar a onboarding luego del registro
+    const router = useRouter();
+
+    // ⬇️ Nuevo: cliente de Supabase para usar en este componente cliente
+    const supabase = createClient();
     
     return (
-
-   
 
     // Layout general: dos columnas (mobile = 1, desktop = 2)
     <main className="grid grid-cols-1 md:grid-cols-2 md:h-screen">
@@ -70,13 +90,101 @@ export default function RegisterPage() {
             Registrate y empieza gratis trial de 7 dias.
           </p>
 
+          {/* ⬇️ Nuevo: bloque para mostrar errores generales de registro */}
+          {errorMessage && (
+            <p className="mb-3 text-sm text-red-600">
+              {errorMessage}
+            </p>
+          )}
+
           {/* ========================== */}
           {/* BLOQUE EMPRESA */} 
           {/* Tarjeta del formulario */}
           <form
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
                 e.preventDefault();
                 // 🔜 Aquí luego irá la lógica de registro con Supabase
+
+                // ⬇️ Nuevo: limpiar errores previos
+                setErrorMessage(null);
+
+                // ⬇️ Nuevo: validación básica de campos requeridos
+                if (!fullName.trim()) {
+                  setErrorMessage("Por favor ingresa tu nombre completo.");
+                  return;
+                }
+
+                if (!email.trim()) {
+                  setErrorMessage("Por favor ingresa tu correo electrónico.");
+                  return;
+                }
+
+                // ⬇️ Nuevo: validación de contraseña mínima
+                if (password.length < 8) {
+                  setErrorMessage("La contraseña debe tener al menos 8 caracteres.");
+                  return;
+                }
+
+                // ⬇️ Nuevo: validación de coincidencia de contraseñas
+                if (password !== password2) {
+                  setErrorMessage("Las contraseñas no coinciden.");
+                  return;
+                }
+
+                try {
+                  // ⬇️ Nuevo: activar estado de envío
+                  setIsSubmitting(true);
+
+                  // ⬇️ Nuevo: registro en Supabase Auth
+                  const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                  });
+
+                  if (error) {
+                    // ⬇️ Nuevo: manejar errores de Supabase (correo duplicado, etc.)
+                    const rawMsg = (error.message || "").toLowerCase();
+                    if (rawMsg.includes("already registered") || rawMsg.includes("already exists")) {
+                      setErrorMessage("Ya existe una cuenta con este correo. Intenta iniciar sesión.");
+                    } else {
+                      setErrorMessage(error.message || "No se pudo crear la cuenta. Inténtalo de nuevo.");
+                    }
+                    setIsSubmitting(false);
+                    return;
+                  }
+
+                  // ⬇️ Nuevo: asegurar que tenemos el usuario de vuelta
+                  const user = data.user;
+                  if (!user) {
+                    setErrorMessage("No se pudo obtener el usuario después del registro.");
+                    setIsSubmitting(false);
+                    return;
+                  }
+
+                  // ⬇️ Nuevo: crear fila en la tabla profiles con datos básicos
+                  const { error: profileError } = await supabase
+                    .from("profiles")
+                    .insert({
+                      id: user.id,
+                      email: email,                    // correo ingresado
+                      name: fullName,             // nombre completo
+                      terms_accepted_at: new Date().toISOString(), // fecha/hora de aceptación de términos
+                    });
+
+                  if (profileError) {
+
+                    setErrorMessage("La cuenta se creó, pero hubo un problema guardando tu perfil. Intenta iniciar sesión.");
+                    setIsSubmitting(false);
+                    return;
+                  }
+
+                  // ⬇️ Nuevo: redirigir a onboarding si todo salió bien
+                  router.push("/onboarding");
+                } catch (err) {
+                  // ⬇️ Nuevo: manejo genérico de errores inesperados
+                  setErrorMessage("Ocurrió un error inesperado. Inténtalo nuevamente.");
+                  setIsSubmitting(false);
+                }
             }}
             className="bg-white border border-slate-200 shadow-lg rounded-2xl p-6 space-y-4"
             >
@@ -88,6 +196,9 @@ export default function RegisterPage() {
                 <input
                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring focus:ring-slate-200"
                 placeholder="Ej. Carlos Pérez"
+                // ⬇️ Nuevo: vincular con estado fullName
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
                 />
             </div>
 
@@ -98,6 +209,9 @@ export default function RegisterPage() {
                 type="email"
                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring focus:ring-slate-200"
                 placeholder="ej. admin@finkus.app"
+                // ⬇️ Nuevo: vincular con estado email
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 />
             </div>
 
@@ -157,8 +271,10 @@ export default function RegisterPage() {
             <button
                 type="submit"
                 className="finkus-btn"
+                // ⬇️ Nuevo: desactivar botón mientras se envía el formulario
+                disabled={isSubmitting}
             >
-                Crear cuenta
+                {isSubmitting ? "Creando cuenta..." : "Crear cuenta"}
             </button>
             </form>
 
@@ -176,4 +292,3 @@ export default function RegisterPage() {
     </main>
   );
 }
-
