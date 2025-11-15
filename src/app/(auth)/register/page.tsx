@@ -156,7 +156,7 @@ export default function RegisterPage() {
             {/* Botón principal */}
             <button
                 type="submit"
-                className="finkus-btn w-full py-2.5 rounded-lg"
+                className="finkus-btn"
             >
                 Crear cuenta
             </button>

@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
           {/* BOTÓN PRINCIPAL */}
           <button
             type="submit"
-            className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 py-3 font-medium text-white shadow-md hover:opacity-90 transition"
+            className="finkus-btn"
           >
             Enviar enlace de recuperación
           </button>

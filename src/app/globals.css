@@ -25,7 +25,7 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 /*   ***********         Fondo global Finkus  *****    */
-
+/*  fondos grandes */
 .finkus-bg {
   background-image:
     url("data:image/svg+xml;charset=utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%20width%3D%22512%22%20height%3D%22512%22%20preserveAspectRatio%3D%22none%22%3E%20%3Cstyle%20type%3D%22text%2Fcss%22%3E%20path%20%7B%20fill%3A%20none%3B%20stroke%3A%20rgba(255,255,255,0.09)%3B%20stroke-width%3A%201.01px%3B%20%7D%20%3C%2Fstyle%3E%20%3Cpath%20vector-effect%3D%22non-scaling-stroke%22%20d%3D%22M111.2%2C81.7L-33.7%2C226.6c-13.9%2C13.9-36.5%2C13.9-50.5%2C0L-229.1%2C81.7%20c-22.5-22.5-6.6-60.9%2C25.2-60.9H86C117.7%2C20.7%2C133.7%2C59.2%2C111.2%2C81.7z%22%2F%3E%20%3Cpath%20vector-effect%3D%22non-scaling-stroke%22%20d%3D%22M366.8%2C338.3L221.9%2C483.2c-13.9%2C13.9-36.5%2C13.9-50.5%2C0L26.6%2C338.3%20c-22.5-22.5-6.6-60.9%2C25.2-60.9h289.8C373.4%2C277.4%2C389.3%2C315.8%2C366.8%2C338.3z%22%2F%3E%20%3Cpath%20vector-effect%3D%22non-scaling-stroke%22%20d%3D%22M40.6%2C423l-144.9-144.9c-13.9-13.9-13.9-36.5%2C0-50.5L40.6%2C82.8%20c22.5-22.5%2C60.9-6.6%2C60.9%2C25.2v289.8C101.5%2C429.6%2C63.1%2C445.5%2C40.6%2C423z%22%2F%3E%20%3Cpath%20vector-effect%3D%22non-scaling-stroke%22%20d%3D%22M296.3%2C679.7L151.4%2C534.8c-13.9-13.9-13.9-36.5%2C0-50.5l144.9-144.9%20c22.5-22.5%2C60.9-6.6%2C60.9%2C25.2v289.8C357.2%2C686.3%2C318.8%2C702.2%2C296.3%2C679.7z%22%2F%3E%20%3Cpath%20vector-effect%3D%22non-scaling-stroke%22%20d%3D%22M623.5%2C81.7L478.6%2C226.6c-13.9%2C13.9-36.5%2C13.9-50.5%2C0L283.2%2C81.7%20c-22.5-22.5-6.6-60.9%2C25.2-60.9h289.8C630%2C20.7%2C646%2C59.2%2C623.5%2C81.7z%22%2F%3E%20%3Cpath%20vector-effect%3D%22non-scaling-stroke%22%20d%3D%22M296.3%2C166.4L151.4%2C21.5c-13.9-13.9-13.9-36.5%2C0-50.5l144.9-144.9%20c22.5-22.5%2C60.9-6.6%2C60.9%2C25.2v289.8C357.2%2C173%2C318.8%2C188.9%2C296.3%2C166.4z%22%2F%3E%20%3Cpath%20vector-effect%3D%22non-scaling-stroke%22%20d%3D%22M552.9%2C423L408%2C278.2c-13.9-13.9-13.9-36.5%2C0-50.5L552.9%2C82.8%20c22.5-22.5%2C60.9-6.6%2C60.9%2C25.2v289.8C613.8%2C429.6%2C575.4%2C445.5%2C552.9%2C423z%22%2F%3E%3C%2Fsvg%3E"),
@@ -37,20 +37,175 @@ body {
   min-height: 100vh;
 }
 
+/* ============================================
+   BOTÓN OFICIAL FINKUS (forma y estilo incluido)
+   ============================================ */
+
 .finkus-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+
+  /* Forma exacta del botón del login */
+  padding: 0.85rem 1.25rem;
+  border-radius: 0.9rem; /* igual a rounded-xl */
+  
+  /* Fondo FINKUS */
   background: linear-gradient(90deg, #149183 0%, #6767C2 50%, #AA6DC7 100%);
   color: #fff;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.95rem;
+
   border: none;
-  transition: all 0.3s ease;
+  cursor: pointer;
+
+  /* Sombra original */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+
+  /* Transiciones suaves */
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    filter 0.25s ease,
+    opacity 0.25s ease;
 }
 
+/* HOVER */
 .finkus-btn:hover {
   filter: brightness(1.1);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 }
 
+/* ACTIVE */
+.finkus-btn:active {
+  transform: translateY(0) scale(0.97);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* FOCUS */
 .finkus-btn:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(103, 103, 194, 0.4);
+  box-shadow:
+    0 0 0 3px rgba(103, 103, 194, 0.45),
+    0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+/* --------------------------------- */
+/* Fondo Finkus solo con gradiente (sin patrón SVG) */
+.finkus-bg-soft {
+  background: radial-gradient(117% 150% at 100% 100%, #149183 0%, #6767C2 56%, #AA6DC7 79%);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Versión optimizada para el SIDEBAR (con patrón, sin min-height ni fixed) */
+.finkus-sidebar {
+  background-image:
+    url("data:image/svg+xml;charset=utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%20width%3D%22512%22%20height%3D%22512%22%20preserveAspectRatio%3D%22none%22%3E%20%3Cstyle%20type%3D%22text%2Fcss%22%3E%20path%20%7B%20fill%3A%20none%3B%20stroke%3A%20rgba(255,255,255,0.09)%3B%20stroke-width%3A%201.01px%3B%20%7D%20%3C%2Fstyle%3E%20%3Cpath%20vector-effect%3D%22non-scaling-stroke%22%20d%3D%22M111.2%2C81.7L-33.7%2C226.6c-13.9%2C13.9-36.5%2C13.9-50.5%2C0L-229.1%2C81.7%20c-22.5-22.5-6.6-60.9%2C25.2-60.9H86C117.7%2C20.7%2C133.7%2C59.2%2C111.2%2C81.7z%22%2F%3E%20%3Cpath%20vector-effect%3D%22non-scaling-stroke%22%20d%3D%22M366.8%2C338.3L221.9%2C483.2c-13.9%2C13.9-36.5%2C13.9-50.5%2C0L26.6%2C338.3%20c-22.5-22.5-6.6-60.9%2C25.2-60.9h289.8C373.4%2C277.4%2C389.3%2C315.8%2C366.8%2C338.3z%22%2F%3E%20%3Cpath%20vector-effect%3D%22non-scaling-stroke%22%20d%3D%22M40.6%2C423l-144.9-144.9c-13.9-13.9-13.9-36.5%2C0-50.5L40.6%2C82.8%20c22.5-22.5%2C60.9-6.6%2C60.9%2C25.2v289.8C101.5%2C429.6%2C63.1%2C445.5%2C40.6%2C423z%22%2F%3E%20%3Cpath%20vector-effect%3D%22non-scaling-stroke%22%20d%3D%22M296.3%2C679.7L151.4%2C534.8c-13.9-13.9-13.9-36.5%2C0-50.5l144.9-144.9%20c22.5-22.5%2C60.9-6.6%2C60.9%2C25.2v289.8C357.2%2C686.3%2C318.8%2C702.2%2C296.3%2C679.7z%22%2F%3E%20%3Cpath%20vector-effect%3D%22non-scaling-stroke%22%20d%3D%22M623.5%2C81.7L478.6%2C226.6c-13.9%2C13.9-36.5%2C13.9-50.5%2C0L283.2%2C81.7%20c-22.5-22.5-6.6-60.9%2C25.2-60.9h289.8C630%2C20.7%2C646%2C59.2%2C623.5%2C81.7z%22%2F%3E%20%3Cpath%20vector-effect%3D%22non-scaling-stroke%22%20d%3D%22M296.3%2C166.4L151.4%2C21.5c-13.9-13.9-13.9-36.5%2C0-50.5l144.9-144.9%20c22.5-22.5%2C60.9-6.6%2C60.9%2C25.2v289.8C357.2%2C173%2C318.8%2C188.9%2C296.3%2C166.4z%22%2F%3E%20%3Cpath%20vector-effect%3D%22non-scaling-stroke%22%20d%3D%22M552.9%2C423L408%2C278.2c-13.9-13.9-13.9-36.5%2C0-50.5L552.9%2C82.8%20c22.5-22.5%2C60.9-6.6%2C60.9%2C25.2v289.8C613.8%2C429.6%2C575.4%2C445.5%2C552.9%2C423z%22%2F%3E%3C%2Fsvg%3E"),
+    radial-gradient(117% 150% at 100% 100%, #149183 0%, #6767C2 56%, #AA6DC7 79%);
+  background-size: 1024px auto, cover;
+  background-repeat: repeat, no-repeat;
+  background-position: center, center;
+  background-attachment: scroll, scroll; /* sin fixed para que no moleste el scroll */
+}
+
+/* Tarjetas tipo Finkus (secciones internas) */
+.finkus-card {
+  background: rgba(248, 250, 252, 0.96); /* similar a bg-slate-50 */
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.4); /* slate-400 soft */
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.10);
+}
+
+/* Badges (chips) con color de marca */
+.finkus-badge {
+  background: rgba(20, 145, 131, 0.13);
+  color: #b6ffe9;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Hover brand para items del sidebar que no estén activos */
+.finkus-hover:hover {
+  background: rgba(15, 23, 42, 0.28);
+  color: #ffffff;
+}
+
+/*  para item del sidebar que  este activo */
+.finkus-sidebar-active {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: saturate(180%) blur(4px);
+}
+
+
+.finkus-logout {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.finkus-logout:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-3px);
+}
+
+/*  "finkus-btn-secondary"  */
+.finkus-btn-secondary {
+  background: rgba(20, 145, 131, 0.14);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #0f172a;
+  border-radius: 14px;
+  padding: 12px 20px;
+  font-weight: 500;
+  transition: all 0.25s ease;
+}
+
+.finkus-btn-secondary:hover {
+  background: rgba(20, 145, 131, 0.22);
+}
+
+/*  "finkus-btn-primary"  */
+.finkus-btn-primary {
+  background: linear-gradient(90deg, #149183 0%, #6767C2 50%, #AA6DC7 100%);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 14px;
+  padding: 12px 20px;
+  transition: all 0.25s ease;
+  border: none;
+}
+
+.finkus-btn-primary:hover {
+  filter: brightness(1.1);
+}
+
+
+
+.finkus-sidebar-header {
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  backdrop-filter: blur(8px);
 }

@@ -342,7 +342,7 @@ export default function OnboardingPage() {
                 <div className="pt-4 flex justify-end">
                   <button
                     type="submit"
-                    className="finkus-btn px-5 py-2.5 rounded-lg text-sm font-medium"
+                    className="finkus-btn"
                   >
                     Continuar
                   </button>
@@ -449,7 +449,7 @@ export default function OnboardingPage() {
                   </button>
                   <button
                     type="submit"
-                    className="finkus-btn px-5 py-2.5 rounded-lg text-sm font-medium"
+                    className="finkus-btns"
                   >
                     Finalizar
                   </button>
