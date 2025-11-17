@@ -4,11 +4,27 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/browser";
+
 import {
   MENTORS_CONFIG,
   type MentorId,
   type MentorConfig,
 } from "@/lib/finkus/mentors-config";
+
+// 🔹 Países (por ahora solo Colombia, pero listo para crecer) lib/finkus/countries-config.ts
+import {
+  COUNTRIES_CONFIG,
+  type CountryId,
+} from "@/lib/finkus/countries-config";
+
+// Horarios centralizados de la mañana y noche, es un script en /lib/finkus/time-slots.ts
+import {
+  MORNING_TIME_OPTIONS,
+  NIGHT_TIME_OPTIONS,
+} from "@/lib/finkus/time-slots";
+
 
 // Paso activo del onboarding (1 = mentoría, 2 = canal/horarios)
 type OnboardingStep = 1 | 2;
@@ -23,24 +39,16 @@ const CHANNEL_OPTIONS = [
   { id: "email", label: "Email" },
 ];
 
-// Opciones de horario de la mañana (step 2) → puedes agregar más
-const MORNING_TIME_OPTIONS = [
-  { id: "06:00", label: "6:00 am" },
-  { id: "07:00", label: "7:00 am" },
-  { id: "08:00", label: "8:00 am" },
-];
-
-// Opciones de horario de la noche (step 2) → puedes agregar más
-const NIGHT_TIME_OPTIONS = [
-  { id: "17:00", label: "5:00 pm" },
-  { id: "19:00", label: "7:00 pm" },
-  { id: "21:00", label: "9:00 pm" },
-];
 
 export default function OnboardingPage() {
   // ---------------------------
   // Estado global del onboarding
   // ---------------------------
+
+  const router = useRouter(); // 🔹 Para redirigir al dashboard después del onboarding
+
+  // 🔹 País seleccionado (MVP: fijo en Colombia, pero ya con config)
+  const [countryId] = useState<CountryId>("CO");
 
   // Paso actual (1 = elegir mentoría, 2 = canal y horarios)
   const [step, setStep] = useState<OnboardingStep>(1);
@@ -60,14 +68,26 @@ export default function OnboardingPage() {
   const [channelId, setChannelId] = useState<string>("");
   const [morningTimeId, setMorningTimeId] = useState<string>("");
   const [nightTimeId, setNightTimeId] = useState<string>("");
+  const [marketingOptIn, setMarketingOptIn] = useState<boolean>(false);
+
+  // 🔹 País actual según config (por ahora siempre CO)
+  const currentCountry = COUNTRIES_CONFIG[countryId];
 
   // Sección activa para el panel izquierdo (solo aplica en step 1)
   const [activeSection, setActiveSection] = useState<ActiveSection>("mentor");
 
   const currentMentor: MentorConfig = MENTORS_CONFIG[selectedMentorId];
+  // 🔹 Preguntas específicas del mentor actual (vienen de mentors-config)
+  const questions = currentMentor.questions;
 
   // Listas derivadas según mentor y objective
   const objectives = currentMentor.objectives;
+
+  // ⬇️ Nuevo: estado para mostrar errores al usuario
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // ⬇️ Nuevo: estado de envío para evitar dobles envíos en Step 2
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const challenges = currentMentor.challenges.filter((ch) => {
     // Si no hay objective o no hay reglas, mostramos todo
@@ -90,12 +110,20 @@ export default function OnboardingPage() {
       ? currentMentor.panelTexts[activeSection]
       : "El canal define por dónde recibirás tus mensajes diarios. Los horarios marcan la franja aproximada en la que llegarán (mañana y noche), para que se integren a tu rutina.";
 
+  // 🔹 Helper para formatear fechas a 'YYYY-MM-DD' (para columnas date en Supabase)
+  function formatDate(date: Date): string {
+    return date.toISOString().slice(0, 10);
+  }
+
   // ---------------------------
   // Handlers de envío de formulario
   // ---------------------------
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // 🔹 Limpiar errores previos al intentar enviar
+    setErrorMessage(null);
 
     if (step === 1) {
       // Validación simple del STEP 1 (puedes mejorarla después)
@@ -106,7 +134,7 @@ export default function OnboardingPage() {
         !selectedAmbitId ||
         !selectedToneId
       ) {
-        alert("Por favor completa todos los campos del Paso 1.");
+        setErrorMessage("Por favor completa todos los campos del Paso 1.");
         return;
       }
 
@@ -116,30 +144,130 @@ export default function OnboardingPage() {
     }
 
     if (step === 2) {
-      // Validación simple del STEP 2
+      // Validación simple del STEP 2 (campos requeridos)
       if (!phoneNumber || !channelId || !morningTimeId || !nightTimeId) {
-        alert("Por favor completa todos los campos del Paso 2.");
+        setErrorMessage("Por favor completa todos los campos del Paso 2.");
         return;
       }
 
-      // 🔜 FUTURO:
-      // Aquí es donde se debería:
-      // 1) Enviar toda la configuración (step 1 + step 2) a Supabase.
-      // 2) Redirigir al usuario al dashboard (ej. /dashboard).
-      // Por ahora solo mostramos en consola.
-      console.log("Onboarding completo:", {
+      // 🔹 Validar teléfono (solo números, 7 a 10 dígitos para Colombia)
+      const cleanedNumber = phoneNumber.replace(/\D/g, "");
+      if (cleanedNumber.length < 7 || cleanedNumber.length > 10) {
+        setErrorMessage(
+          "El número de celular debe tener entre 7 y 10 dígitos (solo números)."
+        );
+        return;
+      }
+
+      // 🔹 Cliente de Supabase en el navegador
+      const supabase = createClient();
+
+      // 🔹 Activar estado de envío para bloquear botón Finalizar
+      setIsSubmitting(true);
+
+      // 1) Obtener usuario actual (debe estar logueado)
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error("❌ Error obteniendo usuario en onboarding:", userError);
+        setErrorMessage("Tu sesión ha expirado. Vuelve a iniciar sesión.");
+        setIsSubmitting(false);
+        router.push("/login");
+        return;
+      }
+
+      // 2) Construir datos de teléfono y timezone a partir del país actual
+      const phoneCountryCode = currentCountry.dialCode; // ej. "+57"
+      const phoneNational = cleanedNumber; // ya validado solo números
+      const phoneE164 = `${phoneCountryCode}${phoneNational}`; // ej. "+573001234567"
+      const timezone = currentCountry.defaultTimezone; // ej. "America/Bogota"
+
+      // 3) Actualizar perfil del usuario en profiles
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          country: countryId,
+          timezone: timezone,
+          phone_country_code: phoneCountryCode,
+          phone_national: phoneNational,
+          phone_e164: phoneE164,
+          preferred_channel: channelId, // "telegram" | "whatsapp" | "email" | "app"
+          marketing_opt_in: marketingOptIn,
+        })
+        .eq("id", user.id);
+
+      if (profileError) {
+        console.error("❌ Error actualizando profiles en onboarding:", profileError);
+        setErrorMessage(
+          "Hubo un problema guardando tu información de contacto. Intenta de nuevo."
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 4) Calcular start_date (mañana) y trial_end (7 días de trial: día 1–7)
+      const today = new Date();
+      const startDate = new Date(today);
+      startDate.setDate(startDate.getDate() + 1); // día siguiente
+
+      const trialEnd = new Date(startDate);
+      trialEnd.setDate(trialEnd.getDate() + 6); // start_date + 6 días => total 7 días
+
+      const start_date_str = formatDate(startDate); // "YYYY-MM-DD"
+      const trial_end_str = formatDate(trialEnd); // "YYYY-MM-DD"
+
+      // 5) Crear la mentoría en user_mentors
+      const { error: mentorError } = await supabase.from("user_mentors").insert({
+        user_id: user.id,
+        mentor_slug: selectedMentorId, // ej. "productivity"
+        status: "trial", // onboarding siempre arranca en trial
+        start_date: start_date_str,
+        trial_end: trial_end_str,
+        morning_time: morningTimeId, // "06:00" etc.
+        night_time: nightTimeId, // "21:00" etc.
+        objective_text: selectedObjectiveId, // aquí guardamos el ID interno del objetivo
+        challenge_text: selectedChallengeId, // ID interno del desafío
+        var1: selectedAmbitId, // ámbito (ambitId)
+        var2: selectedToneId, // tono (toneId)
+        // metadata: {} // si quieres añadir algo más en el futuro
+      });
+
+      if (mentorError) {
+        console.error("❌ Error creando user_mentors en onboarding:", mentorError);
+        setErrorMessage(
+          "Tu configuración no pudo guardarse por un problema interno. Intenta de nuevo más tarde."
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 6) Si todo fue bien, podemos loguear en consola y redirigir al dashboard
+      console.log("✅ Onboarding completado:", {
+        userId: user.id,
         mentorId: selectedMentorId,
         objectiveId: selectedObjectiveId,
         challengeId: selectedChallengeId,
         ambitId: selectedAmbitId,
         toneId: selectedToneId,
-        phoneNumber: `+57 ${phoneNumber}`,
+        countryId,
+        phoneCountryCode,
+        phoneNumberNational: phoneNational,
+        phoneE164,
+        timezone,
         channelId,
         morningTimeId,
         nightTimeId,
+        marketingOptIn,
       });
 
-      alert("Onboarding completado (simulado). Aquí luego irás al dashboard.");
+      // Opcionalmente podríamos resetear isSubmitting, pero en la práctica
+      // el push te saca de esta página:
+      // setIsSubmitting(false);
+
+      router.push("/dashboard");
     }
   };
 
@@ -202,13 +330,22 @@ export default function OnboardingPage() {
         <div className="w-full max-w-md mt-4 md:mt-12 lg:mt-16">
           {/* Encabezado */}
           <h1 className="text-2xl font-semibold text-slate-900 ">
-            {step === 1 ? "Paso 1 de 2 · Tu mentoría" : "Paso 2 de 2 · Canal y horarios"}
+            {step === 1
+              ? "Paso 1 de 2 · Tu mentoría"
+              : "Paso 2 de 2 · Canal y horarios"}
           </h1>
           <p className="text-sm text-slate-500 mb-6">
             {step === 1
               ? "Elige el mentor y el contexto principal con el que quieres trabajar."
               : "Define cómo y cuándo quieres recibir tus mensajes diarios."}
           </p>
+
+          {/* Mensaje de error global (Step 1 / Step 2) */}
+          {errorMessage && (
+            <p className="mb-3 text-sm text-red-600">
+              {errorMessage}
+            </p>
+          )}
 
           {/* Tarjeta del formulario (un solo <form> para ambos pasos) */}
           <form
@@ -249,7 +386,7 @@ export default function OnboardingPage() {
                 {/* Objective */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700">
-                    ¿Cuál de estos objetivos de quieres lograr? *
+                    {questions.objectiveLabel}
                   </label>
                   <select
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring focus:ring-slate-200 bg-white text-sm"
@@ -275,7 +412,7 @@ export default function OnboardingPage() {
                 {/* Challenge */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700">
-                    ¿Qué es lo que más te está impidiendo avanzar? *
+                    {questions.challengeLabel}
                   </label>
                   <select
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring focus:ring-slate-200 bg-white text-sm"
@@ -297,7 +434,7 @@ export default function OnboardingPage() {
                 {/* Ambit (var1) */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700">
-                    ¿En qué ámbito quieres aplicar tu guía? *
+                    {questions.ambitLabel}
                   </label>
                   <select
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring focus:ring-slate-200 bg-white text-sm"
@@ -307,7 +444,7 @@ export default function OnboardingPage() {
                     }}
                     onFocus={() => setActiveSection("vars")}
                   >
-                    <option value="">Selecciona el ambito</option>
+                    <option value="">Selecciona una opción</option>
                     {ambits.map((amb) => (
                       <option key={amb.id} value={amb.id}>
                         {amb.name}
@@ -319,7 +456,7 @@ export default function OnboardingPage() {
                 {/* Tone (var2) */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700">
-                    ¿Que tono prefieres? *
+                    {questions.toneLabel}
                   </label>
                   <select
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring focus:ring-slate-200 bg-white text-sm"
@@ -329,7 +466,7 @@ export default function OnboardingPage() {
                     }}
                     onFocus={() => setActiveSection("vars")}
                   >
-                    <option value="">Selecciona el tono</option>
+                    <option value="">Selecciona una opción</option>
                     {tones.map((tone) => (
                       <option key={tone.id} value={tone.id}>
                         {tone.name}
@@ -361,7 +498,7 @@ export default function OnboardingPage() {
                   <div className="mt-1 flex items-center gap-2">
                     {/* Prefijo fijo (MVP) */}
                     <span className="inline-flex items-center rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                      +57
+                      {currentCountry.dialCode}
                     </span>
 
                     {/* Input número */}
@@ -382,7 +519,7 @@ export default function OnboardingPage() {
                 </div>
 
                 {/* Canal de envío */}
-                <div>   
+                <div>
                   <label className="block text-sm font-medium text-slate-700">
                     Canal de envío *
                   </label>
@@ -438,20 +575,37 @@ export default function OnboardingPage() {
                   </select>
                 </div>
 
+                {/* Marketing opt-in (opcional) */}
+                <div className="pt-2">
+                  <label className="flex items-start gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-800 focus:ring-slate-400"
+                      checked={marketingOptIn}
+                      onChange={(e) => setMarketingOptIn(e.target.checked)}
+                    />
+                    <span>
+                      Me gustaría recibir novedades, ideas y contenido extra
+                      sobre Finkus (opcional).
+                    </span>
+                  </label>
+                </div>
+
                 {/* Botones STEP 2 */}
                 <div className="pt-4 flex justify-between">
                   <button
                     type="button"
-                    className="text-sm text-slate-500 hover:text-slate-700"
+                    className="finkus-btn-secondary text-sm text-slate-500 hover:text-slate-700"
                     onClick={() => setStep(1)}
                   >
                     Volver al paso 1
                   </button>
                   <button
                     type="submit"
-                    className="finkus-btns"
+                    className="finkus-btn-primary"
+                    disabled={isSubmitting} // 🔹 Evitar doble clic
                   >
-                    Finalizar
+                    {isSubmitting ? "Guardando..." : "Finalizar"}
                   </button>
                 </div>
               </>

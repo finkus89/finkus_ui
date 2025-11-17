@@ -109,8 +109,19 @@ export default function RegisterPage() {
                 setErrorMessage(null);
 
                 // ⬇️ Nuevo: validación básica de campos requeridos
+                // 🔹 Validar nombre: solo letras y espacios (con tildes)
                 if (!fullName.trim()) {
                   setErrorMessage("Por favor ingresa tu nombre completo.");
+                  return;
+                }
+                if (!/^[a-zA-ZÁÉÍÓÚáéíóúñÑ ]+$/.test(fullName.trim())) {
+                  setErrorMessage("El nombre solo puede contener letras y espacios.");
+                  return;
+                }
+
+                // 🔹 Mínimo 3 caracteres
+                if (fullName.trim().length < 3) {
+                  setErrorMessage("El nombre es demasiado corto.");
                   return;
                 }
 
@@ -160,6 +171,8 @@ export default function RegisterPage() {
                     setIsSubmitting(false);
                     return;
                   }
+                  
+                  const normalizedName = fullName.trim().toLowerCase();
 
                   // ⬇️ Nuevo: crear fila en la tabla profiles con datos básicos
                   const { error: profileError } = await supabase
@@ -167,7 +180,7 @@ export default function RegisterPage() {
                     .insert({
                       id: user.id,
                       email: email,                    // correo ingresado
-                      name: fullName,             // nombre completo
+                      name: normalizedName,             // nombre completo
                       terms_accepted_at: new Date().toISOString(), // fecha/hora de aceptación de términos
                     });
 

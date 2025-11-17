@@ -133,47 +133,47 @@ Si se borra solamente la fila en profiles, la cuenta sigue existiendo en Auth (n
 
 Estas tareas no son necesarias para el MVP, pero se implementarán en versiones posteriores:
 
+## Para /register lo deseable a futuro es:
+
+Si NO está logueado → puede ver la página y registrarse.
+
+Si YA está logueado → no tiene sentido que vuelva a “crear cuenta”:
+
+deberías redirigirlo directo a /dashboard o /onboarding.
+
+Eso es el mismo concepto que en login:
+
+“si ya tienes sesión, no te dejo en register/login”.
+
 ### 7.1 Confirmación real de correo
 
 Para habilitar verificación de email nuevamente:
-
 Activar “Confirm email”.
-
 Crear perfiles mediante:
-
 un trigger SQL (AFTER INSERT ON auth.users), o
-
 un backend usando service_role.
 
 ### 7.2 Recuperación de contraseña
 
 Implementar el flujo:
-
 /forgot-password
-
 /reset-password
 
 ### 7.3 Edición del perfil
 
 Agregar capacidad de modificar:
-
 nombre,
-
 email,
-
 país,
-
 zona horaria,
-
 número de teléfono,
-
 canal preferido.
 
 ### 7.4 Reenvío del correo de verificación
 
 Cuando habilitemos verificación real.
 
-7.5 Eliminación total de cuenta desde la UI
+# 7.5 Eliminación total de cuenta desde la UI
 
 Que borre al usuario desde auth.users para mantener los datos limpios.
 

@@ -1,5 +1,4 @@
 "use client";
-
 // src/app/dashboard/page.tsx
 // Dashboard básico de Finkus (estilo similar a Vasbel, adaptado a 2 columnas)
 // - Sidebar con íconos + header superior
@@ -7,69 +6,351 @@
 // - Columna derecha: mensajes recientes
 // - Responsive: en móvil el sidebar se oculta y aparece como drawer
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
-
-
+// 🔹 Cliente de Supabase en el navegador
+import { createClient } from "@/lib/supabase/browser";
+import { useRouter } from "next/navigation";
 
 // Íconos lucide-react
-import {
-  LayoutDashboard,
-  Sparkles,
-  MessageCircle,
-  Wand2,
-  CreditCard,
-  Settings,
-  LogOut,
-  Menu,
-  X,
+import {LayoutDashboard, Sparkles, MessageCircle, Wand2, CreditCard, Settings, LogOut, Menu, X,
 } from "lucide-react";
 
-// ===== Datos mock (luego vendrán de Supabase) =====
-const mentorData = {
-  mentor: "Productividad",
-  objetivo: "Planear la semana",
-  desafio: "Procrastinación",
-  ambito: "Trabajo",
-  tono: "Calmado pero firme",
-  canal: "Telegram",
-  horaManana: "6:30 AM",
-  horaNoche: "9:30 PM",
-  nivelActual: 2,
-  totalNiveles: 5,
-  progresoNivel: 45,
-};
+import {
+  MENTORS_CONFIG,
+  type MentorId,
+} from "@/lib/finkus/mentors-config"; 
+import { MORNING_TIME_OPTIONS, NIGHT_TIME_OPTIONS } from "@/lib/finkus/time-slots";
 
 const mensajesRecientes = [
   {
-    id: 1,
-    tipo: "mañana",
-    fecha: "11 nov 2025",
-    texto: "Activa 10 minutos de enfoque: escribe 3 tareas no negociables.",
+    id: 1, tipo: "mañana", fecha: "11 nov 2025",  texto: "Activa 10 minutos de enfoque: escribe 3 tareas no negociables.",
   },
   {
-    id: 2,
-    tipo: "noche",
-    fecha: "10 nov 2025",
-    texto:
-      "Registra 1 avance y 1 obstáculo. Cierra con una micro-decisión para mañana.",
+    id: 2, tipo: "noche", fecha: "10 nov 2025", texto: "Registra 1 avance y 1 obstáculo. Cierra con una micro-decisión para mañana.",
   },
   {
-    id: 3,
-    tipo: "mañana",
-    fecha: "10 nov 2025",
-    texto:
-      "Reduce fricción: deja preparado el escritorio y el café antes de dormir.",
+    id: 3, tipo: "mañana", fecha: "10 nov 2025", texto: "Reduce fricción: deja preparado el escritorio y el café antes de dormir.",
   },
 ];
 
 export default function DashboardPage() {
-  // 💡 En el futuro, estos datos (nombre, estado, etc.) vendrán del usuario autenticado
-  const userName = "Carlos";
+  // Nombre del usuario (viene de Supabase -> tabla profiles)
+  const [userName, setUserName] = useState<string | null>(null);
+  
+  // Estado UI de la mentoría (lo vamos a llenar con datos de user_mentors)
+  const [mentorStatusUi, setMentorStatusUi] = useState<{
+    label: string;
+    message: string;
+    badgeClass: string;
+  } | null>(null);
 
-  // Controla si el sidebar móvil (drawer) está abierto o cerrado
+  // Datos que se muestran en la tarjeta de mentoría en el dashboard.
+  type MentorUIData = {
+    mentor: string;
+    objetivo: string;
+    desafio: string;
+    ambito: string;
+    tono: string;
+    canal: string;
+    horaManana: string;
+    horaNoche: string;
+    nivelActual: number;
+    totalNiveles: number;
+    progresoNivel: number;
+  };
+
+  const [mentorData, setMentorData] = useState<MentorUIData>({
+    mentor: "—",
+    objetivo: "—",
+    desafio: "—",
+    ambito: "—",
+    tono: "—",
+    canal: "—",
+    horaManana: "—",
+    horaNoche: "—",
+    nivelActual: 0,
+    totalNiveles: 5,
+    progresoNivel: 0,
+  });
+  
+  // Formatea el nombre: toma solo el primero y capitaliza la primera letra
+  function formatName(name: string | null): string {
+    if (!name) return "Usuario";
+
+    const firstName = name.split(" ")[0]; // solo el primer nombre
+    return firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+  }
+
+   // Convierte el preferred_channel de BD a un texto legible para la UI
+  function formatChannel(channel: string | null | undefined): string {
+    if (!channel) return "App";
+
+    switch (channel) {
+      case "email":
+        return "Email";
+      case "telegram":
+        return "Telegram";
+      case "whatsapp":
+        return "WhatsApp";
+      case "app":
+      default:
+        return "App";
+    }
+  }
+
+  ///funciones para mapear los horarios
+  function getMorningLabel(time: string | null): string {
+    if (!time) return "—";
+    return MORNING_TIME_OPTIONS.find((t) => t.id === time)?.label || time;
+  }
+
+  function getNightLabel(time: string | null): string {
+    if (!time) return "—";
+    return NIGHT_TIME_OPTIONS.find((t) => t.id === time)?.label || time;
+  }
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const loadData = async () => {
+      // 1) Obtener usuario autenticado (auth.users)
+      const {data: { user }, error: userError, } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error("No se pudo obtener el usuario actual", userError);
+        return;
+      }
+
+      // 2) Cargar perfil en 'profiles' (name y preferred_channel)
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("name, preferred_channel")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Error cargando el perfil:", profileError);
+      }
+
+      if (profile?.name) {
+        setUserName(formatName(profile.name));
+      } 
+      //canal crudo
+      const preferredChannelRaw = (profile?.preferred_channel as string | null) ?? "app";
+
+
+      // 3) Cargar mentoría actual desde 'user_mentors'
+      const { data: mentor, error: mentorError } = await supabase
+        .from("user_mentors")
+        .select(
+          `
+          status,
+          trial_end,
+          created_at,
+          start_date,
+          mentor_slug,
+          objective_text,
+          challenge_text,
+          var1,
+          var2,
+          morning_time,
+          night_time
+        `
+        )
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (mentorError) {
+        console.error("Error cargando la mentoría actual:", mentorError);
+        // Si hay error, dejamos un estado neutro
+        setMentorStatusUi({
+          label: "Sin mentoría activa",
+          message: "Configura tu primera mentoría para empezar a recibir mensajes.",
+          badgeClass: "border-slate-200 bg-slate-50 text-slate-600",
+        });
+        return;
+      }
+
+      if (!mentor) {
+        // Usuario sin mentoría aún
+        setMentorStatusUi({
+          label: "Sin mentoría activa",
+          message: "Configura tu primera mentoría para empezar a recibir mensajes.",
+          badgeClass: "border-slate-200 bg-slate-50 text-slate-600",
+        });
+        return;
+      }
+
+      // 4) Traducir estado de BD -> UI
+      const rawStatus = (mentor as any).status as string | null;
+      const rawTrialEnd = (mentor as any).trial_end as string | null;
+
+      const today = new Date();
+      const trialEndDate = rawTrialEnd ? new Date(rawTrialEnd) : null;
+
+      // Por ahora, lógica simple:
+      // - Si status = 'trial' y aún no se vence -> En prueba (verde)
+      // - Si status = 'trial' y ya se venció -> Prueba vencida (testing) (amarillo)
+      // - Otros estados: active/paused/ended (por si acaso, aunque en MVP uses solo trial)
+      if (rawStatus === "trial") {
+        const trialVencido =
+          trialEndDate !== null && today.getTime() > trialEndDate.getTime();
+
+        if (trialVencido) {
+          setMentorStatusUi({
+            label: "Prueba vencida (testing)",
+            message:
+              "Tu periodo de prueba terminó, pero seguimos en modo testing sin pagos activos.",
+            badgeClass: "border-amber-200 bg-amber-50 text-amber-700",
+          });
+        } else {
+          setMentorStatusUi({
+            label: "En prueba",
+            message: "Tu mentoría está en periodo de prueba.",
+            badgeClass: "border-emerald-200 bg-emerald-50 text-emerald-700",
+          });
+        }
+      } else if (rawStatus === "active") {
+        setMentorStatusUi({
+          label: "Activa",
+          message: "Tu mentoría está activa y lista para enviarte mensajes.",
+          badgeClass: "border-emerald-200 bg-emerald-50 text-emerald-700",
+        });
+      } else if (rawStatus === "paused") {
+        setMentorStatusUi({
+          label: "Pausada",
+          message: "Has pausado tu mentoría. Puedes reactivarla cuando quieras.",
+          badgeClass: "border-amber-200 bg-amber-50 text-amber-700",
+        });
+      } else if (rawStatus === "canceled") {
+        setMentorStatusUi({
+          label: "Cancelada",
+          message: "Esta mentoría fue cancelada. Puedes crear una nueva cuando quieras.",
+          badgeClass: "border-rose-200 bg-rose-50 text-rose-700",
+        });
+      } else {
+        // Estado desconocido / nulo
+        setMentorStatusUi({
+          label: "Estado desconocido",
+          message: "No pudimos determinar el estado actual de tu mentoría.",
+          badgeClass: "border-slate-200 bg-slate-50 text-slate-600",
+        });
+      }
+
+      // 5) Construir datos reales para la tarjeta de mentoría
+      const m = mentor;
+      // Mentor
+      const mentorId = m.mentor_slug as MentorId;
+      const mentorConfig = MENTORS_CONFIG[mentorId];
+      // Objetivo
+      const objectiveName =
+        mentorConfig.objectives.find((o) => o.id === m.objective_text)?.name ||
+        m.objective_text;
+      // Desafío
+      const challengeName =
+        mentorConfig.challenges.find((c) => c.id === m.challenge_text)?.name ||
+        m.challenge_text;
+      // var1
+      const ambitName =
+        mentorConfig.ambits.find((a) => a.id === m.var1)?.name || m.var1;
+
+      // var2
+      const toneName =
+        mentorConfig.tones.find((t) => t.id === m.var2)?.name || m.var2;
+
+      // ------------ Cálculo de n_días a partir de start_date ------------
+      let n_days = 1; // por defecto
+      if (m.start_date) {
+        const start = new Date(m.start_date as string);
+        const today = new Date();
+        // Diferencia en días (ignorando horas)
+        const diffMs = today.getTime() - start.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        n_days = diffDays + 1; // día 1 = día de inicio
+        if (n_days < 1) {
+          n_days = 1;
+        }
+      }
+      // ------------ Buscar nivel actual según n_days ------------
+      const levels = mentorConfig.levels;
+      const totalLevels = levels.length;
+      let nivelActual = 1;
+      let progresoNivel = 0;
+
+      if (levels.length > 0) {
+        // Por defecto usamos el primer nivel
+        let current = levels[0];
+
+        // Buscar el nivel cuyo rango contenga el dayNumber
+        for (const lvl of levels) {
+          if (n_days >= lvl.startDay && n_days <= lvl.endDay) {
+            current = lvl;
+            break;
+          }
+          // Si el día ya está por encima del último rango, usamos el último
+          if (n_days > levels[levels.length - 1].endDay) {
+            current = levels[levels.length - 1];
+          }
+        }
+
+        nivelActual = current.level;
+        const steps = current.endDay - current.startDay; // ej: 7 - 1 = 6
+
+        if (steps <= 0) {
+          // Nivel de un solo día: progreso completo
+          progresoNivel = 100;
+        } else {
+          const rawProgress = ((n_days   - current.startDay) / steps) * 100;
+
+          if (rawProgress < 0) {
+            progresoNivel = 0;
+          } else if (rawProgress > 100) {
+            progresoNivel = 100;
+          } else {
+            progresoNivel = Math.round(rawProgress);
+          }
+        }
+
+      }
+
+      const uiData: MentorUIData = {
+        mentor: mentorConfig.name,
+        objetivo: objectiveName,
+        desafio: challengeName,
+        ambito: ambitName,
+        tono: toneName,
+        canal: formatChannel(preferredChannelRaw),
+        horaManana: getMorningLabel(m.morning_time as string | null),
+        horaNoche: getNightLabel(m.night_time as string | null),
+        nivelActual,
+        totalNiveles: totalLevels,
+        progresoNivel,
+      };
+
+      setMentorData(uiData);;
+
+    };
+    loadData();
+  }, []);
+
+    // Controla si el sidebar móvil (drawer) está abierto o cerrado
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
 
+  // Cerrar sesión y redirigir a login
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      router.push("/login");
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      // Opcional: mostrar un toast en el futuro
+    }
+  };
   return (
     // Fondo general gris
     <div className="min-h-screen flex bg-slate-100">
@@ -77,9 +358,10 @@ export default function DashboardPage() {
       {/* Solo se muestra en pantallas medianas en adelante */}
       <aside className="hidden md:flex w-64 flex-col finkus-sidebar text-slate-100">
         <SidebarContent
-          userName={userName}
+          userName={userName ?? "Usuario"}
           onCloseMobileSidebar={undefined}
           showCloseButton={false}
+          onLogout={handleLogout}
         />
       </aside>
 
@@ -96,9 +378,10 @@ export default function DashboardPage() {
           {/* Panel lateral */}
           <div className="relative w-72 max-w-full h-full finkus-sidebar text-slate-100 shadow-xl">
             <SidebarContent
-              userName={userName}
+              userName={userName ?? "Usuario"}
               showCloseButton
               onCloseMobileSidebar={() => setIsMobileSidebarOpen(false)}
+              onLogout={handleLogout}
             />
           </div>
         </div>
@@ -124,7 +407,7 @@ export default function DashboardPage() {
                 Finkus
               </p>
               <h1 className="text-lg font-semibold text-slate-900">
-                Hola, {userName}
+                Hola, {userName ?? "Usuario"}
               </h1>
             </div>
           </div>
@@ -133,12 +416,12 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <div className="flex flex-col items-end">
               <span className="text-sm font-medium text-slate-800">
-                {userName}
-              
+                {userName ?? "Usuario"}
+
               </span>
             </div>
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-fuchsia-500 to-sky-400 flex items-center justify-center text-xs font-semibold text-white">
-              {userName.charAt(0).toUpperCase()}
+              {(userName ?? "U").charAt(0).toUpperCase()}
             </div>
           </div>
         </header>
@@ -149,15 +432,33 @@ export default function DashboardPage() {
           <div className="grid gap-6 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1.8fr)]">
             {/* ============ COLUMNA 1: MENTORÍA ============ */}
             <section className="finkus-card px-5 py-5 text-[15px] text-slate-700">
-              {/* Título / icono */}
-              <div className="mb-5 flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-sky-400 text-sm text-white">
-                  <Sparkles size={18} />
+              {/* Título /  icono + estado mentoría  */}
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-sky-400 text-sm text-white">
+                    <Sparkles size={18} />
+                  </div>
+                  <h2 className="text-lg font-semibold text-slate-900">
+                    Mentoría
+                  </h2>
                 </div>
-                <h2 className="text-lg font-semibold text-slate-900">
-                  Mentoría
-                </h2>
+
+                {/* Badge de estado de la mentoría */}
+                <span
+                  className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${
+                    mentorStatusUi?.badgeClass ??
+                    "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  }`}
+                >
+                  {mentorStatusUi?.label ?? "En prueba"}
+                </span>
               </div>
+
+              {/* Mensajito pequeño bajo el título */}
+              <p className="mb-5 text-xs text-slate-500">
+                {mentorStatusUi?.message ??
+                  "Tu mentoría está en periodo de prueba."}
+              </p>  
 
               {/* Contenido mentoría (lo que ya tenías, reorganizado) */}
               <div className="space-y-5">
@@ -303,12 +604,14 @@ interface SidebarContentProps {
   userName: string;
   showCloseButton?: boolean;
   onCloseMobileSidebar?: () => void;
+  onLogout: () => void;
 }
 
 function SidebarContent({
   userName,
   showCloseButton = false,
   onCloseMobileSidebar,
+  onLogout,
 }: SidebarContentProps) {
   return (
     <div className="flex h-full flex-col">
@@ -388,7 +691,9 @@ function SidebarContent({
       <div className="border-t border-slate-800 p-4">
         <button
           type="button"
-          className="finkus-logout w-full">
+          className="finkus-logout w-full"
+          onClick={onLogout} // 🔹 aquí
+        >
           <LogOut size={16} />
           <span>Cerrar sesión</span>
         </button>

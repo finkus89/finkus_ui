@@ -47,18 +47,34 @@ export interface ToneItem {
   description?: string;
   definitionUser?: string;
 }
+// rango de niveles
+export interface LevelRange {
+  level: number;     // número de nivel (1, 2, 3, ...)
+  startDay: number;  // día inicial (incluido)
+  endDay: number;    // día final (incluido)
+}
+
+// 🔹 NUEVO: bloque de preguntas específicas por mentor
+export interface MentorQuestions {
+  objectiveLabel: string;
+  challengeLabel: string;
+  ambitLabel: string;
+  toneLabel: string;
+}
+
 
 export interface MentorConfig {
   id: MentorId;
   name: string;
   shortDescription: string;
   panelTexts: PanelTexts;
-
+// 🔹 NUEVO: preguntas del formulario (Step 1) específicas por mentor
+  questions: MentorQuestions;
   objectives: ObjectiveItem[];
   challenges: ChallengeItem[];
   ambits: AmbitItem[];
   tones: ToneItem[];
-
+  levels: LevelRange[];
   // Espacio reservado para futuras reglas avanzadas si las necesitas
   // rules?: {
   //   challengesByObjective?: Record<string, string[]>;
@@ -86,6 +102,14 @@ const PRODUCTIVITY_CONFIG: MentorConfig = {
       "El desafío es el freno principal. Nos ayuda a ajustar tono y tipo de acción.",
     vars:
       "El ámbito indica dónde aplicarás los cambios. El tono define cómo quieres que Finkus te hable.",
+  },
+
+  // 🔹 NUEVO: preguntas por defecto para Productividad
+  questions: {
+    objectiveLabel: "¿Cuál de estos objetivos de productividad quieres lograr? *",
+    challengeLabel: "¿Qué es lo que más te está impidiendo avanzar? *",
+    ambitLabel: "¿En qué ámbito quieres aplicar tu guía? *",
+    toneLabel: "¿Que tono prefieres? *",
   },
 
   objectives: [
@@ -195,6 +219,14 @@ const PRODUCTIVITY_CONFIG: MentorConfig = {
         "Tono fresco y natural, usa humor sutil o giros simpáticos sin perder foco.",
     },
   ],
+  // 🔹 Rango oficial de niveles para Productividad
+  levels: [
+    { level: 1, startDay: 1,  endDay: 7  },  // Nivel 1: días 1–7
+    { level: 2, startDay: 8,  endDay: 15 },  // Nivel 2: días 8–15
+    { level: 3, startDay: 16, endDay: 25 },  // Nivel 3: días 16–25
+    { level: 4, startDay: 26, endDay: 40 },  // Nivel 4: días 26–40
+    { level: 5, startDay: 41, endDay: 1000 },  // Nivel 5: días 41–60 (tentativo)
+  ],
 };
 
 // -----------------------------------------------------------------------------
@@ -218,6 +250,14 @@ const WISDOM_CONFIG: MentorConfig = {
       "El desafío es el patrón que más te frena: duda, desánimo, falta de conexión o incoherencia.",
     vars:
       "El ámbito aterriza dónde quieres aplicar la enseñanza. El tono define cómo prefieres recibir el mensaje.",
+  },
+
+ // 🔹 NUEVO: preguntas por defecto para Sabiduría
+  questions: {
+    objectiveLabel: "¿Cuál de estos objetivos de sabiduría de quieres lograr? *",
+    challengeLabel: "¿Qué es lo que más te está impidiendo avanzar? *",
+    ambitLabel: "¿En qué ámbito quieres aplicar tu guía? *",
+    toneLabel: "¿Que tono prefieres? *",
   },
 
   objectives: [
@@ -417,6 +457,14 @@ const WISDOM_CONFIG: MentorConfig = {
       description:
         "Tono firme, con equilibrio entre aliento y disciplina. Usa lenguaje claro y seguro, sin dureza.",
     },
+  ],
+  // 🔹 Rango oficial de niveles para Productividad
+  levels: [
+    { level: 1, startDay: 1,  endDay: 15  },  // Nivel 1: días 1–7
+    { level: 2, startDay: 16,  endDay: 35 },  // Nivel 2: días 8–15
+    { level: 3, startDay: 36, endDay: 65 },  // Nivel 3: días 16–25
+    { level: 4, startDay: 66, endDay: 100 },  // Nivel 4: días 26–40
+    { level: 5, startDay: 101, endDay: 1000 },  // Nivel 5: días 41–60 (tentativo)
   ],
 };
 
